@@ -1,53 +1,68 @@
 'use strict';
 const colors = require('colors');
 const readlineSync = require('readline-sync');
-const gridSize = 75;
-console.log('hi');
-genMaze(gridSize)
+const gridSize = 31;
+const grid = createGrid(gridSize);
+const dirs = [
+    [-2, 0],
+    [0, 2],
+    [2, 0],
+    [0, -2]
+];
+console.log(inRange(2, 1, 3));
+console.log(inRect([3,3], [[1,1], [5,5]]));
+let key = readlineSync.keyIn('...', { hideEchoBack: true, mask: '' });
+console.log('hey');
 
-function genMaze(gridSize) {
-    let grid = createGrid(gridSize);
-    let startCell = rndOddCell(gridSize);
-    let currentCell = startCell;
-    var key;
-    console.log(currentCell);
-    //displayBoard(grid, currentCell, maze);
-    const size = gridSize;
-    let maze = move(grid, currentCell, [startCell], [startCell], 1);
-    displayBoard(grid, startCell, maze.maze) 
-    console.log('Done');
-    /*while (key != ' ') {
+console.log(grid);
+genMaze(grid)
 
-        key = readlineSync.keyIn('...', { hideEchoBack: true, mask: '' });
-        let move;
-        let invalid = true;
-        do {
-            move = rndDirection()
-            console.log
-            let newCell = currentCell.map((x, n) => {
-                return x += move[n];
-            })
-            let visited = maze.filter(z => z[0] == newCell[0] && z[1] == newCell[1]).length > 0
-            if (newCell[0] < 0 || newCell[0] > size - 1 || newCell[1] < 0 || newCell[1] > size - 1 || visited) {
-                invalid = true;
-            } else {
-                invalid = false;
-                maze.unshift(currentCell)
-                let wall = currentCell.map((x, n) => {
-                    return x += move.map(x => x/2)[n];
-                })
-                console.log(`wall: ${wall}`);
-                grid[wall[1]][wall[0]] = 1;
-                currentCell = newCell;
-            }
-
-        } while (invalid)
-
-
-    }*/
+function inRect(point, rect) {
+    const tLeft = rect[0];
+    const bRight = rect[1];
+    const inX = inRange(point[0], tLeft[0], bRight[0])
+    const inY = inRange(point[1], tLeft[1], bRight[1])
+    return inX && inY; 
 }
 
-function move(grid, currentCell, path, maze, depth, step = false, backtracking = false) {
+function inRange(num, min, max) {
+    console.log(num)
+    console.log(min)
+    console.log(max)
+    return (num >= min && num <= max)
+}
+
+function genMaze(grid) {
+    //let grid = createGrid(gridSize);
+    let gridSize = grid.length;
+    let startCell = rndOddCell(gridSize);
+    let startMaze = [];
+    for (var y = 0; y < gridSize; y++) {
+        for (var x = 0; x < gridSize; x++) {
+            if (inRect([x,y], [[13,13],[17,17]])) {
+                
+                //startMaze.unshift([x,y]);
+            }
+    
+        }
+    }
+    //console.log(startCell);
+    //let maze = move(grid, startCell, [startCell], [startCell], 1).maze;
+    //console.log(maze);
+    //mazes.map(x => displayBoard(grid, startCell, x.maze));
+    displayBoard(grid, startCell, move(grid, startCell, [startCell], startMaze, 1).maze)
+    /*
+    let mazeDepths = [];
+    for (let i = 5; i <= 79; i+=2) {
+        var start = rndOddCell(i);
+        var maze = move(createGrid(i),start,[start],[start], 0)
+        mazeDepths.push([i, maze.depth])
+    }
+    mazeDepths.map(x => console.log(`${x[0]}, ${x[1]}`));*/
+    //console.log('Done');
+}
+
+function move(grid, currentCell, path, maze, depth, step, backtracking) {
     if (path.length == 1 && backtracking) {
         return {path, maze, depth};
     }
@@ -56,17 +71,12 @@ function move(grid, currentCell, path, maze, depth, step = false, backtracking =
     const size = grid.length;
     let canMove = true;
     let newCell;
-    let dirs = [
-        [-2, 0],
-        [0, 2],
-        [2, 0],
-        [0, -2]
-    ];
-    dirs = shuffle(dirs)
+
+    let shuffledDirs = shuffle(dirs)
     //console.log(dirs);
     let dir;
     for (var i = 0; i < 4; i++) { //Check if the point is within the grid
-        var testDir = dirs[i];
+        var testDir = shuffledDirs[i];
         newCell = [currentCell[0] + testDir[0], currentCell[1] + testDir[1]]
         var outOfBounds = (newCell[0] < 1 || newCell[0] > size - 1) || (newCell[1] < 1 || newCell[1] > size - 1)
         var visited = maze.filter(x => x[0] == newCell[0] && x[1] == newCell[1]).length > 0;
@@ -77,20 +87,31 @@ function move(grid, currentCell, path, maze, depth, step = false, backtracking =
         } else {
             canMove = false;
         }
+
+        
     }
+    let maxDepth = (0.25*(size*size)-0.5*size-0.75)
+    /*console.log(maxDepth);
+    if (randomInt(0, (maxDepth*size-depth)/15)==0) {
+        console.log('Randomly backtraking'.bgMagenta);
+        canMove = false;
+    }*/
     let key = step?readlineSync.keyIn('...', { hideEchoBack: true, mask: '' }):'h';
+    if (step) {
+        displayBoard(grid, currentCell, maze)
+    }
     if (canMove && key != ' ') {
-        console.log('Going down')
+        console.log('Going down'.bgGreen)
         maze.unshift([currentCell[0] + dir[0] / 2, currentCell[1] + dir[1] / 2])
         path.unshift(newCell);
         maze.unshift(newCell);
         return move(grid, newCell, path, maze, ++depth, step);
     } else if (key != ' ' && !canMove) {
-        console.log('Backtracking')
+        console.log('Backtracking'.bgBlue)
         let lastMove = path.shift();
-        return move(grid, lastMove, path, maze, ++depth, step, true);
+        return move(grid, lastMove, path, maze, --depth, step, true);
     } else {
-        console.log('Going up')
+        console.log('Going up'.bgYellow)
         return {path, maze};
     }
 }
